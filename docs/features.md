@@ -6,7 +6,7 @@
 |---|------|-----------|------|
 | 1 | ユーザー登録・ログイン | [features/authentication.md](features/authentication.md) | メール+パスワードによる新規登録・ログイン・ログアウト・JWT認証 |
 | 2 | タイムライン | [features/timeline.md](features/timeline.md) | 全体タイムライン・フォロータイムラインの表示・切り替え |
-| 3 | 投稿 | [features/post.md](features/post.md) | テキスト＋画像の投稿作成・削除・詳細表示 |
+| 3 | 投稿 | [features/post.md](features/post.md) | テキスト＋画像の投稿作成・編集・削除・詳細表示 |
 | 4 | コメント | [features/comment.md](features/comment.md) | 投稿へのコメント投稿・削除・コメント数表示 |
 | 5 | いいね | [features/like.md](features/like.md) | 投稿へのいいね追加・取り消し・いいね数表示 |
 | 6 | プロフィール・フォロー | [features/profile.md](features/profile.md) | プロフィール表示・編集・フォロー/フォロワー管理 |
@@ -29,6 +29,7 @@
 - ユーザーとして、フォロー中のユーザーの投稿だけを見たい（フォロータイムライン）
 - ユーザーとして、テキスト（最大280文字）で投稿したい
 - ユーザーとして、投稿に画像（最大4枚）を添付したい
+- ユーザーとして、自分の投稿を編集したい
 - ユーザーとして、自分の投稿を削除したい
 - ユーザーとして、投稿の詳細（コメント・いいね数）を確認したい
 
