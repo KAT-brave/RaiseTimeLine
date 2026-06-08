@@ -1,0 +1,38 @@
+# macOS
+.DS_Store
+
+# Java / Spring Boot
+*.class
+*.jar
+*.war
+*.ear
+target/
+build/
+.gradle/
+*.iml
+.idea/
+
+# Node.js / React
+node_modules/
+dist/
+build/
+.env
+.env.local
+.env*.local
+
+# 環境変数・機密情報
+*.env
+application-production.yml
+application-production.properties
+
+# IDE
+.vscode/
+*.iml
+
+# ログ
+*.log
+logs/
+
+# その他
+*.tmp
+.DS_Store
