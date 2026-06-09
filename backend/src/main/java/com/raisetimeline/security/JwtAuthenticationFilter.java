@@ -1,7 +1,7 @@
 package com.raisetimeline.security;
 
 import com.raisetimeline.user.User;
-import com.raisetimeline.user.UserRepository;
+import com.raisetimeline.user.UserMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,11 +21,11 @@ import java.util.Optional;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
-    private final UserRepository userRepository;
+    private final UserMapper userMapper;
 
-    public JwtAuthenticationFilter(JwtUtil jwtUtil, UserRepository userRepository) {
+    public JwtAuthenticationFilter(JwtUtil jwtUtil, UserMapper userMapper) {
         this.jwtUtil = jwtUtil;
-        this.userRepository = userRepository;
+        this.userMapper = userMapper;
     }
 
     @Override
@@ -35,7 +35,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = extractToken(request);
         if (StringUtils.hasText(token) && jwtUtil.validateToken(token)) {
             Long userId = jwtUtil.extractUserId(token);
-            Optional<User> userOpt = userRepository.findById(userId);
+            Optional<User> userOpt = userMapper.findById(userId);
             if (userOpt.isPresent()) {
                 User user = userOpt.get();
                 UsernamePasswordAuthenticationToken auth =
