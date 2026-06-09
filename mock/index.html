@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RaiseTimeLine - Prototype Mock</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="app-container">
+
+  <!-- ===================== SCREEN: LOGIN ===================== -->
+  <section id="screen-login" class="screen">
+    <div class="auth-container">
+      <h2>ログイン</h2>
+      <div class="form-group">
+        <label>メールアドレス</label>
+        <input type="email" id="login-email" placeholder="example@email.com" />
+      </div>
+      <div class="form-group">
+        <label>パスワード</label>
+        <input type="password" id="login-password" placeholder="パスワードを入力" />
+        <div class="error-message" id="login-error"></div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="handleLogin()">ログイン</button>
+      <div class="auth-switch">
+        アカウントをお持ちでない方は <a onclick="showScreen('signup')">新規登録</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== SCREEN: SIGNUP ===================== -->
+  <section id="screen-signup" class="screen">
+    <div class="auth-container">
+      <h2>新規登録</h2>
+      <div class="form-group">
+        <label>ユーザー名</label>
+        <input type="text" id="signup-username" placeholder="username" />
+      </div>
+      <div class="form-group">
+        <label>メールアドレス</label>
+        <input type="email" id="signup-email" placeholder="example@email.com" />
+      </div>
+      <div class="form-group">
+        <label>パスワード</label>
+        <input type="password" id="signup-password" placeholder="パスワードを入力" />
+        <div class="error-message" id="signup-error"></div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="handleSignup()">登録する</button>
+      <div class="auth-switch">
+        すでにアカウントをお持ちの方は <a onclick="showScreen('login')">ログイン</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== SCREEN: TIMELINE ===================== -->
+  <section id="screen-timeline" class="screen with-bottom-nav">
+    <div class="header">
+      <h1>ホーム</h1>
+      <div class="header-actions">
+        <button class="btn btn-outline btn-sm" onclick="handleLogout()">ログアウト</button>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="tab active" id="tab-global" onclick="switchTimeline('global')">全体</button>
+      <button class="tab" id="tab-following" onclick="switchTimeline('following')">フォロー中</button>
+    </div>
+    <div class="compose-area" onclick="showScreen('post-create')">
+      <div class="avatar" id="timeline-compose-avatar"></div>
+      <div class="compose-placeholder">いまどうしてる？</div>
+    </div>
+    <div id="timeline-posts"></div>
+  </section>
+
+  <!-- ===================== SCREEN: POST CREATE ===================== -->
+  <section id="screen-post-create" class="screen with-bottom-nav">
+    <div class="header">
+      <button class="back-btn" onclick="showScreen('timeline')">←</button>
+      <h1>投稿する</h1>
+      <button class="btn btn-primary btn-sm" id="post-create-submit" onclick="handlePostCreate()">投稿</button>
+    </div>
+    <div class="post-form-container">
+      <div style="display:flex;gap:12px;">
+        <div class="avatar" id="post-create-avatar"></div>
+        <div style="flex:1;">
+          <div class="post-textarea-wrapper">
+            <textarea
+              class="post-textarea"
+              id="post-create-textarea"
+              placeholder="いまどうしてる？"
+              maxlength="300"
+              oninput="updateCharCounter('post-create-textarea','post-create-counter','post-create-submit')"
+            ></textarea>
+          </div>
+          <div class="char-counter" id="post-create-counter">280</div>
+          <div class="image-preview-area" id="post-create-previews"></div>
+        </div>
+      </div>
+      <div class="post-form-toolbar">
+        <div class="toolbar-actions">
+          <label class="toolbar-btn" title="画像を追加">
+            🖼️
+            <input type="file" accept="image/*" multiple hidden id="post-create-file" onchange="handleImageSelect('post-create-file','post-create-previews',createImageList)" />
+          </label>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== SCREEN: POST EDIT ===================== -->
+  <section id="screen-post-edit" class="screen with-bottom-nav">
+    <div class="header">
+      <button class="back-btn" id="post-edit-back" onclick="goBackFromEdit()">←</button>
+      <h1>投稿を編集</h1>
+      <button class="btn btn-primary btn-sm" id="post-edit-submit" onclick="handlePostEdit()">保存</button>
+    </div>
+    <div class="post-form-container">
+      <div style="display:flex;gap:12px;">
+        <div class="avatar" id="post-edit-avatar"></div>
+        <div style="flex:1;">
+          <div class="post-textarea-wrapper">
+            <textarea
+              class="post-textarea"
+              id="post-edit-textarea"
+              placeholder="投稿を編集"
+              maxlength="300"
+              oninput="updateCharCounter('post-edit-textarea','post-edit-counter','post-edit-submit')"
+            ></textarea>
+          </div>
+          <div class="char-counter" id="post-edit-counter">280</div>
+          <div class="image-preview-area" id="post-edit-previews"></div>
+        </div>
+      </div>
+      <div class="post-form-toolbar">
+        <div class="toolbar-actions">
+          <label class="toolbar-btn" title="画像を追加">
+            🖼️
+            <input type="file" accept="image/*" multiple hidden id="post-edit-file" onchange="handleImageSelect('post-edit-file','post-edit-previews',editImageList)" />
+          </label>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== SCREEN: POST DETAIL ===================== -->
+  <section id="screen-post-detail" class="screen with-bottom-nav">
+    <div class="header">
+      <button class="back-btn" id="post-detail-back" onclick="goBackFromDetail()">←</button>
+      <h1>投稿</h1>
+    </div>
+    <div id="post-detail-content"></div>
+  </section>
+
+  <!-- ===================== SCREEN: PROFILE ===================== -->
+  <section id="screen-profile" class="screen with-bottom-nav">
+    <div class="header">
+      <button class="back-btn" id="profile-back" onclick="goBackFromProfile()">←</button>
+      <div>
+        <div style="font-weight:700;font-size:16px;" id="profile-header-username"></div>
+        <div style="font-size:13px;color:#536471;" id="profile-header-posts-count"></div>
+      </div>
+    </div>
+    <div id="profile-content"></div>
+  </section>
+
+  <!-- ===================== SCREEN: PROFILE EDIT ===================== -->
+  <section id="screen-profile-edit" class="screen with-bottom-nav">
+    <div class="header">
+      <button class="back-btn" onclick="showScreen('profile');loadProfile(currentUser.id)">←</button>
+      <h1>プロフィールを編集</h1>
+      <button class="btn btn-primary btn-sm" onclick="handleProfileEdit()">保存</button>
+    </div>
+    <div style="padding:16px;">
+      <div style="text-align:center;margin-bottom:24px;">
+        <label class="avatar-upload-wrapper">
+          <div class="avatar avatar-lg" id="edit-avatar-preview"></div>
+          <div class="avatar-upload-overlay">📷</div>
+          <input type="file" accept="image/*" hidden id="edit-avatar-file" onchange="handleAvatarPreview()" />
+        </label>
+        <div style="font-size:13px;color:#536471;margin-top:6px;">タップして変更</div>
+      </div>
+      <div class="form-group">
+        <label>ユーザー名</label>
+        <input type="text" id="edit-username" />
+      </div>
+      <div class="form-group">
+        <label>自己紹介</label>
+        <textarea id="edit-bio" style="min-height:80px;" placeholder="自己紹介を入力"></textarea>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== SCREEN: FOLLOW LIST ===================== -->
+  <section id="screen-follow-list" class="screen with-bottom-nav">
+    <div class="header">
+      <button class="back-btn" onclick="goBackFromFollowList()">←</button>
+      <div id="follow-list-header-info">
+        <div style="font-weight:700;font-size:16px;" id="follow-list-username"></div>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="tab" id="tab-following-list" onclick="switchFollowTab('following')">フォロー中</button>
+      <button class="tab" id="tab-followers-list" onclick="switchFollowTab('followers')">フォロワー</button>
+    </div>
+    <div id="follow-list-content"></div>
+  </section>
+
+  <!-- ===================== SCREEN: USER SEARCH ===================== -->
+  <section id="screen-search" class="screen with-bottom-nav">
+    <div class="header">
+      <h1>ユーザーを探す</h1>
+    </div>
+    <div class="search-container">
+      <div class="search-input-wrapper">
+        <span class="search-icon">🔍</span>
+        <input
+          type="text"
+          class="search-input"
+          id="search-input"
+          placeholder="ユーザー名を入力"
+          oninput="handleSearchInput()"
+        />
+      </div>
+    </div>
+    <div id="search-results-count" class="search-results-count"></div>
+    <div id="search-results"></div>
+  </section>
+
+</div><!-- /.app-container -->
+
+<!-- Bottom Nav (shown when logged in) -->
+<nav class="bottom-nav" id="bottom-nav" style="display:none;">
+  <button class="nav-item" id="nav-home" onclick="showScreen('timeline')" title="ホーム">🏠</button>
+  <button class="nav-item" id="nav-search" onclick="showScreen('search')" title="検索">🔍</button>
+  <button class="nav-item" id="nav-profile" onclick="goToMyProfile()" title="プロフィール">👤</button>
+</nav>
+
+<!-- Confirm Delete Modal -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal">
+    <h3>投稿を削除しますか？</h3>
+    <p>この操作は取り消せません。</p>
+    <div class="modal-actions">
+      <button class="btn btn-danger btn-full" id="confirm-delete-btn" onclick="confirmDelete()">削除する</button>
+      <button class="btn btn-outline btn-full" onclick="closeModal()">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
