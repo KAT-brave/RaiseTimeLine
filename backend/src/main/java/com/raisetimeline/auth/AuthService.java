@@ -1,22 +1,36 @@
 package com.raisetimeline.auth;
 
+import com.raisetimeline.auth.token.RefreshToken;
+import com.raisetimeline.auth.token.RefreshTokenMapper;
 import com.raisetimeline.security.JwtUtil;
 import com.raisetimeline.user.User;
 import com.raisetimeline.user.UserMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
+import java.util.UUID;
+
 @Service
 public class AuthService {
 
     private final UserMapper userMapper;
+    private final RefreshTokenMapper refreshTokenMapper;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
-    public AuthService(UserMapper userMapper, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
+    @Value("${app.jwt.refresh-token-expiration-days}")
+    private long refreshTokenExpirationDays;
+
+    public AuthService(UserMapper userMapper,
+                       RefreshTokenMapper refreshTokenMapper,
+                       PasswordEncoder passwordEncoder,
+                       JwtUtil jwtUtil) {
         this.userMapper = userMapper;
+        this.refreshTokenMapper = refreshTokenMapper;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
     }
@@ -35,8 +49,7 @@ public class AuthService {
         user.setPasswordDigest(passwordEncoder.encode(request.getPassword()));
         userMapper.insert(user);
 
-        String token = jwtUtil.generateToken(user.getId());
-        return new AuthResponse(token, toUserDto(user));
+        return buildAuthResponse(user);
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -47,8 +60,44 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "メールアドレスまたはパスワードが正しくありません");
         }
 
-        String token = jwtUtil.generateToken(user.getId());
-        return new AuthResponse(token, toUserDto(user));
+        return buildAuthResponse(user);
+    }
+
+    public AuthResponse refresh(String rawRefreshToken) {
+        RefreshToken stored = refreshTokenMapper.findByToken(rawRefreshToken)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "リフレッシュトークンが無効です"));
+
+        if (stored.isExpired()) {
+            refreshTokenMapper.deleteByToken(rawRefreshToken);
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "リフレッシュトークンの有効期限が切れています。再ログインしてください");
+        }
+
+        User user = userMapper.findById(stored.getUserId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "ユーザーが見つかりません"));
+
+        // Rotate: delete old, issue new
+        refreshTokenMapper.deleteByToken(rawRefreshToken);
+        return buildAuthResponse(user);
+    }
+
+    public void logout(String rawRefreshToken) {
+        refreshTokenMapper.deleteByToken(rawRefreshToken);
+    }
+
+    private AuthResponse buildAuthResponse(User user) {
+        String accessToken = jwtUtil.generateAccessToken(user.getId());
+        String refreshToken = createRefreshToken(user.getId());
+        return new AuthResponse(accessToken, refreshToken, toUserDto(user));
+    }
+
+    private String createRefreshToken(Long userId) {
+        String token = UUID.randomUUID().toString();
+        RefreshToken refreshToken = new RefreshToken();
+        refreshToken.setUserId(userId);
+        refreshToken.setToken(token);
+        refreshToken.setExpiresAt(LocalDateTime.now().plusDays(refreshTokenExpirationDays));
+        refreshTokenMapper.insert(refreshToken);
+        return token;
     }
 
     private AuthResponse.UserDto toUserDto(User user) {

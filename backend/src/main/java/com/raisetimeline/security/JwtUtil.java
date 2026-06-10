@@ -1,7 +1,6 @@
 package com.raisetimeline.security;
 
 import io.jsonwebtoken.*;
-import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -15,12 +14,11 @@ public class JwtUtil {
     @Value("${app.jwt.secret}")
     private String secret;
 
-    @Value("${app.jwt.expiration-ms}")
-    private long expirationMs;
+    @Value("${app.jwt.access-token-expiration-ms}")
+    private long accessTokenExpirationMs;
 
     private SecretKey signingKey() {
         byte[] keyBytes = secret.getBytes();
-        // Ensure key is at least 32 bytes for HS256
         if (keyBytes.length < 32) {
             byte[] padded = new byte[32];
             System.arraycopy(keyBytes, 0, padded, 0, keyBytes.length);
@@ -29,11 +27,11 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String generateToken(Long userId) {
+    public String generateAccessToken(Long userId) {
         return Jwts.builder()
                 .subject(String.valueOf(userId))
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + expirationMs))
+                .expiration(new Date(System.currentTimeMillis() + accessTokenExpirationMs))
                 .signWith(signingKey())
                 .compact();
     }

@@ -16,7 +16,8 @@ mybatis:
 app:
   jwt:
     secret: ${JWT_SECRET:dev_secret_key_must_be_at_least_32_characters_long}
-    expiration-ms: 86400000  # 24 hours
+    access-token-expiration-ms: 900000      # 15 minutes
+    refresh-token-expiration-days: 7        # 7 days
 
 server:
   port: 8080

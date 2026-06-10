@@ -17,12 +17,22 @@ public class AuthController {
 
     @PostMapping("/signup")
     public ResponseEntity<AuthResponse> signup(@Valid @RequestBody SignupRequest request) {
-        AuthResponse response = authService.signup(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.signup(request));
     }
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refresh(@Valid @RequestBody RefreshRequest request) {
+        return ResponseEntity.ok(authService.refresh(request.getRefreshToken()));
+    }
+
+    @DeleteMapping("/logout")
+    public ResponseEntity<Void> logout(@Valid @RequestBody RefreshRequest request) {
+        authService.logout(request.getRefreshToken());
+        return ResponseEntity.noContent().build();
     }
 }
