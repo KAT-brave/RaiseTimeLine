@@ -1,0 +1,76 @@
+package com.raisetimeline.post;
+
+import com.raisetimeline.user.User;
+import com.raisetimeline.user.UserMapper;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+public class PostService {
+
+    private final PostMapper postMapper;
+    private final UserMapper userMapper;
+
+    public PostService(PostMapper postMapper, UserMapper userMapper) {
+        this.postMapper = postMapper;
+        this.userMapper = userMapper;
+    }
+
+    public PostsResponse getTimeline(int page, int size) {
+        int offset = page * size;
+        List<Post> posts = postMapper.findAll(size + 1, offset);
+        boolean hasNext = posts.size() > size;
+        if (hasNext) posts = posts.subList(0, size);
+        long totalCount = postMapper.countAll();
+        List<PostResponse> responses = posts.stream().map(this::toResponse).collect(Collectors.toList());
+        return new PostsResponse(responses, hasNext, totalCount);
+    }
+
+    public int countNewPosts(Long afterId) {
+        return postMapper.countAfter(afterId);
+    }
+
+    public PostResponse createPost(PostRequest request, Long userId) {
+        Post post = new Post();
+        post.setUserId(userId);
+        post.setContent(request.getContent());
+        postMapper.insert(post);
+        return toResponse(post);
+    }
+
+    public PostResponse updatePost(Long id, PostRequest request, Long userId) {
+        Post post = findAndAuthorize(id, userId);
+        post.setContent(request.getContent());
+        postMapper.update(post);
+        return toResponse(post);
+    }
+
+    public void deletePost(Long id, Long userId) {
+        findAndAuthorize(id, userId);
+        postMapper.deleteById(id);
+    }
+
+    private Post findAndAuthorize(Long id, Long userId) {
+        Post post = postMapper.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "投稿が見つかりません"));
+        if (!post.getUserId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "この操作は許可されていません");
+        }
+        return post;
+    }
+
+    private PostResponse toResponse(Post post) {
+        User user = userMapper.findById(post.getUserId()).orElse(null);
+        PostResponse.UserDto userDto = user != null
+                ? new PostResponse.UserDto(user.getId(), user.getUsername(), user.getAvatarUrl())
+                : new PostResponse.UserDto(post.getUserId(), "unknown", null);
+        return new PostResponse(
+                post.getId(), post.getContent(), post.getCreatedAt(), post.getUpdatedAt(),
+                userDto, Collections.emptyList(), 0, 0, false);
+    }
+}

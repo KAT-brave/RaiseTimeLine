@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.raisetimeline.post.PostMapper">
+
+  <resultMap id="postResultMap" type="com.raisetimeline.post.Post">
+    <id     property="id"        column="id" />
+    <result property="userId"    column="user_id" />
+    <result property="content"   column="content" />
+    <result property="createdAt" column="created_at" />
+    <result property="updatedAt" column="updated_at" />
+  </resultMap>
+
+  <select id="findAll" resultMap="postResultMap">
+    SELECT id, user_id, content, created_at, updated_at
+    FROM posts
+    ORDER BY created_at DESC
+    LIMIT #{limit} OFFSET #{offset}
+  </select>
+
+  <select id="countAll" resultType="long">
+    SELECT COUNT(*) FROM posts
+  </select>
+
+  <select id="countAfter" resultType="int">
+    SELECT COUNT(*) FROM posts WHERE id > #{afterId}
+  </select>
+
+  <select id="findById" resultMap="postResultMap">
+    SELECT id, user_id, content, created_at, updated_at
+    FROM posts
+    WHERE id = #{id}
+  </select>
+
+  <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+    INSERT INTO posts (user_id, content, created_at, updated_at)
+    VALUES (#{userId}, #{content}, NOW(), NOW())
+  </insert>
+
+  <update id="update">
+    UPDATE posts
+    SET content = #{content}, updated_at = NOW()
+    WHERE id = #{id}
+  </update>
+
+  <delete id="deleteById">
+    DELETE FROM posts WHERE id = #{id}
+  </delete>
+
+</mapper>
