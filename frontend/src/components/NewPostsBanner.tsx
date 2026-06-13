@@ -5,23 +5,60 @@ interface Props {
 
 export default function NewPostsBanner({ count, onRefresh }: Props) {
   if (count === 0) return null;
+
+  function handleClick() {
+    onRefresh();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   return (
-    <div style={styles.banner} onClick={onRefresh}>
-      {count}件の新しい投稿があります
+    <div style={styles.overlay}>
+      <div style={styles.modal} onClick={handleClick}>
+        <span style={styles.icon}>🔔</span>
+        <span style={styles.text}>{count}件の新しい投稿があります</span>
+        <span style={styles.sub}>クリックして最新を表示</span>
+      </div>
     </div>
   );
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  banner: {
-    background: '#1d9bf0',
+  overlay: {
+    position: 'fixed',
+    top: 20,
+    left: '50%',
+    transform: 'translateX(-50%)',
+    zIndex: 1000,
+    display: 'flex',
+    justifyContent: 'center',
+    pointerEvents: 'none',
+  },
+  modal: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 4,
+    background: '#0f1419',
     color: '#fff',
-    textAlign: 'center',
-    padding: '10px 16px',
+    padding: '14px 28px',
+    borderRadius: 16,
+    boxShadow: '0 4px 24px rgba(0,0,0,0.35)',
     cursor: 'pointer',
-    fontSize: 14,
-    fontWeight: 600,
-    borderRadius: 9999,
-    margin: '8px 16px',
+    pointerEvents: 'auto',
+    minWidth: 220,
+    textAlign: 'center',
+  },
+  icon: {
+    fontSize: 22,
+  },
+  text: {
+    fontSize: 15,
+    fontWeight: 700,
+    lineHeight: 1.4,
+  },
+  sub: {
+    fontSize: 12,
+    color: '#8899a6',
+    fontWeight: 400,
   },
 };
