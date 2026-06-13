@@ -40,14 +40,16 @@ public class PostService {
         post.setUserId(userId);
         post.setContent(request.getContent());
         postMapper.insert(post);
-        return toResponse(post);
+        Post saved = postMapper.findById(post.getId()).orElse(post);
+        return toResponse(saved);
     }
 
     public PostResponse updatePost(Long id, PostRequest request, Long userId) {
         Post post = findAndAuthorize(id, userId);
         post.setContent(request.getContent());
         postMapper.update(post);
-        return toResponse(post);
+        Post updated = postMapper.findById(id).orElse(post);
+        return toResponse(updated);
     }
 
     public void deletePost(Long id, Long userId) {
