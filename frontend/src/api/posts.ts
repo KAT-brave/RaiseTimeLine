@@ -28,7 +28,6 @@ export interface PostResponse {
 export interface PostsResponse {
   posts: PostResponse[];
   hasNext: boolean;
-  totalCount: number;
 }
 
 function authHeaders(token: string) {

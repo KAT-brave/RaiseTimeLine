@@ -26,7 +26,8 @@ public class PostController {
         if (after != null) {
             return ResponseEntity.ok(java.util.Map.of("count", postService.countNewPosts(after)));
         }
-        return ResponseEntity.ok(postService.getTimeline(page, size));
+        int clampedSize = Math.min(Math.max(size, 1), 100);
+        return ResponseEntity.ok(postService.getTimeline(page, clampedSize));
     }
 
     @PostMapping

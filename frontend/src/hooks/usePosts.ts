@@ -13,9 +13,12 @@ export function usePosts() {
   const [loading, setLoading] = useState(false);
   const [newPostsCount, setNewPostsCount] = useState(0);
   const latestIdRef = useRef<number | null>(null);
+  // useRefでloadingを管理し、クロージャによる競合状態を防ぐ
+  const loadingRef = useRef(false);
 
   const loadPage = useCallback(async (pageNum: number, replace: boolean) => {
-    if (!token || loading) return;
+    if (!token || loadingRef.current) return;
+    loadingRef.current = true;
     setLoading(true);
     try {
       const data = await fetchPosts(token, pageNum, PAGE_SIZE);
@@ -25,22 +28,22 @@ export function usePosts() {
         return next;
       });
       setHasNext(data.hasNext);
-      if (replace && data.posts.length > 0) latestIdRef.current = data.posts[0].id;
     } finally {
+      loadingRef.current = false;
       setLoading(false);
     }
   }, [token]);
 
   useEffect(() => {
     loadPage(0, true);
-  }, []);
+  }, [token]);
 
   const loadMore = useCallback(() => {
-    if (!hasNext || loading) return;
+    if (!hasNext || loadingRef.current) return;
     const nextPage = page + 1;
     setPage(nextPage);
     loadPage(nextPage, false);
-  }, [hasNext, loading, page, loadPage]);
+  }, [hasNext, page, loadPage]);
 
   const refreshPosts = useCallback(async () => {
     setPage(0);

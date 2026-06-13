@@ -12,15 +12,23 @@
     <result property="updatedAt" column="updated_at" />
   </resultMap>
 
-  <select id="findAll" resultMap="postResultMap">
-    SELECT id, user_id, content, created_at, updated_at
-    FROM posts
-    ORDER BY created_at DESC
-    LIMIT #{limit} OFFSET #{offset}
-  </select>
+  <resultMap id="postWithUserResultMap" type="com.raisetimeline.post.PostWithUser">
+    <id     property="id"        column="post_id" />
+    <result property="userId"    column="user_id" />
+    <result property="content"   column="content" />
+    <result property="createdAt" column="created_at" />
+    <result property="updatedAt" column="updated_at" />
+    <result property="username"  column="username" />
+    <result property="avatarUrl" column="avatar_url" />
+  </resultMap>
 
-  <select id="countAll" resultType="long">
-    SELECT COUNT(*) FROM posts
+  <select id="findAllWithUser" resultMap="postWithUserResultMap">
+    SELECT p.id AS post_id, p.user_id, p.content, p.created_at, p.updated_at,
+           u.username, u.avatar_url
+    FROM posts p
+    JOIN users u ON u.id = p.user_id
+    ORDER BY p.created_at DESC
+    LIMIT #{limit} OFFSET #{offset}
   </select>
 
   <select id="countAfter" resultType="int">

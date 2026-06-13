@@ -23,12 +23,12 @@ public class PostService {
 
     public PostsResponse getTimeline(int page, int size) {
         int offset = page * size;
-        List<Post> posts = postMapper.findAll(size + 1, offset);
-        boolean hasNext = posts.size() > size;
-        if (hasNext) posts = posts.subList(0, size);
-        long totalCount = postMapper.countAll();
-        List<PostResponse> responses = posts.stream().map(this::toResponse).collect(Collectors.toList());
-        return new PostsResponse(responses, hasNext, totalCount);
+        // N+1回避: JOIN で users を一括取得
+        List<PostWithUser> rows = postMapper.findAllWithUser(size + 1, offset);
+        boolean hasNext = rows.size() > size;
+        if (hasNext) rows = rows.subList(0, size);
+        List<PostResponse> responses = rows.stream().map(this::toResponseFromJoin).collect(Collectors.toList());
+        return new PostsResponse(responses, hasNext);
     }
 
     public int countNewPosts(Long afterId) {
@@ -64,6 +64,13 @@ public class PostService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "この操作は許可されていません");
         }
         return post;
+    }
+
+    private PostResponse toResponseFromJoin(PostWithUser row) {
+        PostResponse.UserDto userDto = new PostResponse.UserDto(row.getUserId(), row.getUsername(), row.getAvatarUrl());
+        return new PostResponse(
+                row.getId(), row.getContent(), row.getCreatedAt(), row.getUpdatedAt(),
+                userDto, Collections.emptyList(), 0, 0, false);
     }
 
     private PostResponse toResponse(Post post) {

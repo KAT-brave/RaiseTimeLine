@@ -18,6 +18,7 @@ export default function PostCard({ post, currentUserId, onUpdated, onDeleted }: 
   const [editContent, setEditContent] = useState(post.content);
   const [submitting, setSubmitting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
   const menuRef = useRef<HTMLDivElement>(null);
 
   const isOwner = post.user.id === currentUserId;
@@ -49,8 +50,13 @@ export default function PostCard({ post, currentUserId, onUpdated, onDeleted }: 
 
   async function handleDelete() {
     if (!token) return;
-    await deletePost(token, post.id);
-    onDeleted(post.id);
+    setDeleteError('');
+    try {
+      await deletePost(token, post.id);
+      onDeleted(post.id);
+    } catch {
+      setDeleteError('削除に失敗しました。もう一度お試しください。');
+    }
   }
 
   const formattedTime = new Date(post.createdAt).toLocaleString('ja-JP', {
@@ -118,8 +124,9 @@ export default function PostCard({ post, currentUserId, onUpdated, onDeleted }: 
           <div style={styles.dialog}>
             <h3 style={styles.dialogTitle}>投稿を削除しますか？</h3>
             <p style={styles.dialogDesc}>この操作は取り消せません。</p>
+            {deleteError && <p style={{ color: '#f4212e', fontSize: 13, margin: '0 0 12px' }}>{deleteError}</p>}
             <div style={styles.dialogActions}>
-              <button style={styles.cancelBtn} onClick={() => setShowDeleteConfirm(false)}>キャンセル</button>
+              <button style={styles.cancelBtn} onClick={() => { setShowDeleteConfirm(false); setDeleteError(''); }}>キャンセル</button>
               <button style={{ ...styles.saveBtn, background: '#f4212e' }} onClick={handleDelete}>削除</button>
             </div>
           </div>

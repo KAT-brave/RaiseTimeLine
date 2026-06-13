@@ -8,8 +8,7 @@ import java.util.Optional;
 
 @Mapper
 public interface PostMapper {
-    List<Post> findAll(@Param("limit") int limit, @Param("offset") int offset);
-    long countAll();
+    List<PostWithUser> findAllWithUser(@Param("limit") int limit, @Param("offset") int offset);
     int countAfter(@Param("afterId") Long afterId);
     Optional<Post> findById(@Param("id") Long id);
     void insert(Post post);
