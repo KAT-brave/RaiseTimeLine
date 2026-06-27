@@ -1,0 +1,18 @@
+{
+  "name": "raisetimeline-e2e",
+  "private": true,
+  "scripts": {
+    "test": "playwright test --project=chromium tests/",
+    "test:all": "playwright test tests/",
+    "test:perf": "playwright test tests/*.perf.spec.ts",
+    "test:a11y": "playwright test tests/a11y.spec.ts",
+    "test:headed": "playwright test --headed --project=chromium tests/",
+    "test:debug": "playwright test --debug tests/",
+    "test:ui": "playwright test --ui"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.10.1",
+    "@playwright/test": "^1.49.0",
+    "@types/node": "^22.0.0"
+  }
+}
