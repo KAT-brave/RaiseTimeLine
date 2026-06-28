@@ -21,10 +21,11 @@ public class PostService {
         this.userMapper = userMapper;
     }
 
-    public PostsResponse getTimeline(int page, int size) {
+    public PostsResponse getTimeline(int page, int size, Long currentUserId, String type) {
         int offset = page * size;
-        // N+1回避: JOIN で users を一括取得
-        List<PostWithUser> rows = postMapper.findAllWithUser(size + 1, offset);
+        List<PostWithUser> rows = "following".equals(type)
+                ? postMapper.findFollowingWithUser(size + 1, offset, currentUserId)
+                : postMapper.findAllWithUser(size + 1, offset, currentUserId);
         boolean hasNext = rows.size() > size;
         if (hasNext) rows = rows.subList(0, size);
         List<PostResponse> responses = rows.stream().map(this::toResponseFromJoin).collect(Collectors.toList());
@@ -70,7 +71,7 @@ public class PostService {
         PostResponse.UserDto userDto = new PostResponse.UserDto(row.getUserId(), row.getUsername(), row.getAvatarUrl());
         return new PostResponse(
                 row.getId(), row.getContent(), row.getCreatedAt(), row.getUpdatedAt(),
-                userDto, Collections.emptyList(), 0, 0, false);
+                userDto, Collections.emptyList(), row.getLikesCount(), row.getCommentsCount(), row.isLikedByMe());
     }
 
     private PostResponse toResponse(Post post) {

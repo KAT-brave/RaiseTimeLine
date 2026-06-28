@@ -34,8 +34,8 @@ function authHeaders(token: string) {
   return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 }
 
-export async function fetchPosts(token: string, page: number, size = 20): Promise<PostsResponse> {
-  const res = await fetch(`${API_BASE}/posts?page=${page}&size=${size}`, {
+export async function fetchPosts(token: string, page: number, size = 20, type: 'global' | 'following' = 'global'): Promise<PostsResponse> {
+  const res = await fetch(`${API_BASE}/posts?page=${page}&size=${size}&type=${type}`, {
     headers: authHeaders(token),
   });
   const data = await res.json();

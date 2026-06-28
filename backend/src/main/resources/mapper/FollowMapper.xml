@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.raisetimeline.follow.FollowMapper">
+
+    <insert id="insert">
+        INSERT INTO follows (follower_id, following_id, created_at)
+        VALUES (#{followerId}, #{followingId}, NOW())
+    </insert>
+
+    <delete id="deleteByFollowerAndFollowing">
+        DELETE FROM follows
+        WHERE follower_id = #{followerId} AND following_id = #{followingId}
+    </delete>
+
+    <select id="existsByFollowerAndFollowing" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM follows
+            WHERE follower_id = #{followerId} AND following_id = #{followingId}
+        )
+    </select>
+
+    <select id="countFollowing" resultType="int">
+        SELECT COUNT(*) FROM follows WHERE follower_id = #{followerId}
+    </select>
+
+    <select id="countFollowers" resultType="int">
+        SELECT COUNT(*) FROM follows WHERE following_id = #{followingId}
+    </select>
+
+</mapper>
