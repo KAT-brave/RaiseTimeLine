@@ -1,0 +1,133 @@
+name: E2E CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - 'backend/**'
+      - 'e2e/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - 'backend/**'
+      - 'e2e/**'
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: raisetimeline
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: raisetimeline_dev
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Gradleキャッシュ
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: npmキャッシュ（frontend）
+        uses: actions/cache@v4
+        with:
+          path: frontend/node_modules
+          key: ${{ runner.os }}-npm-frontend-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-frontend-
+
+      - name: npmキャッシュ（e2e）
+        uses: actions/cache@v4
+        with:
+          path: e2e/node_modules
+          key: ${{ runner.os }}-npm-e2e-${{ hashFiles('e2e/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-e2e-
+
+      - name: 依存関係インストール（frontend & e2e）
+        run: |
+          npm ci --prefix frontend
+          npm ci --prefix e2e
+
+      - name: Playwrightブラウザインストール（Chromiumのみ）
+        run: npx playwright install --with-deps chromium
+        working-directory: e2e
+
+      - name: バックエンド起動
+        working-directory: backend
+        env:
+          DB_URL: jdbc:postgresql://localhost:5432/raisetimeline_dev
+          DB_USERNAME: raisetimeline
+          DB_PASSWORD: password
+          JWT_SECRET: ci_secret_key_must_be_at_least_32_characters_long
+        run: ./gradlew bootRun &
+
+      - name: フロントエンド起動
+        working-directory: frontend
+        run: npm run dev &
+
+      - name: バックエンド起動待機（:8080）
+        run: |
+          echo "バックエンド起動待機中..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8080/api/v1/health > /dev/null 2>&1; then
+              echo "バックエンド起動完了"
+              break
+            fi
+            echo "待機中... ($i/30)"
+            sleep 5
+          done
+
+      - name: フロントエンド起動待機（:5173）
+        run: |
+          echo "フロントエンド起動待機中..."
+          for i in $(seq 1 20); do
+            if curl -sf http://localhost:5173 > /dev/null 2>&1; then
+              echo "フロントエンド起動完了"
+              break
+            fi
+            echo "待機中... ($i/20)"
+            sleep 3
+          done
+
+      - name: storageState用ディレクトリ作成
+        run: mkdir -p e2e/auth
+
+      - name: E2Eテスト実行（perfテスト除外）
+        working-directory: e2e
+        run: npx playwright test --project=chromium tests/ --ignore-glob="**/*.perf.spec.ts"
+
+      - name: Playwrightレポートをアップロード
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          retention-days: 7
