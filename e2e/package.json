@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "test": "playwright test --project=chromium tests/",
+    "test:ci": "playwright test --project=chromium tests/auth.spec.ts tests/comment-lifecycle.spec.ts tests/follow.spec.ts tests/like.spec.ts tests/post-lifecycle.spec.ts tests/profile.spec.ts tests/search.spec.ts tests/timeline.spec.ts tests/a11y.spec.ts",
     "test:all": "playwright test tests/",
     "test:perf": "playwright test tests/*.perf.spec.ts",
     "test:a11y": "playwright test tests/a11y.spec.ts",

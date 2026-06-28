@@ -10,6 +10,9 @@ public class PostWithUser {
     private LocalDateTime updatedAt;
     private String username;
     private String avatarUrl;
+    private int commentsCount;
+    private int likesCount;
+    private boolean likedByMe;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -25,4 +28,10 @@ public class PostWithUser {
     public void setUsername(String username) { this.username = username; }
     public String getAvatarUrl() { return avatarUrl; }
     public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
+    public int getCommentsCount() { return commentsCount; }
+    public void setCommentsCount(int commentsCount) { this.commentsCount = commentsCount; }
+    public int getLikesCount() { return likesCount; }
+    public void setLikesCount(int likesCount) { this.likesCount = likesCount; }
+    public boolean isLikedByMe() { return likedByMe; }
+    public void setLikedByMe(boolean likedByMe) { this.likedByMe = likedByMe; }
 }

@@ -3,12 +3,13 @@
 
 # Java / Spring Boot
 *.class
-*.jar
 *.war
 *.ear
 target/
 build/
 .gradle/
+# gradle-wrapper.jar は追跡対象（CIで必要）
+!gradle/wrapper/gradle-wrapper.jar
 *.iml
 .idea/
 
@@ -32,6 +33,10 @@ application-production.properties
 # ログ
 *.log
 logs/
+
+# パフォーマンステスト レポート出力
+perf/results/
+perf/node_modules/
 
 # その他
 *.tmp

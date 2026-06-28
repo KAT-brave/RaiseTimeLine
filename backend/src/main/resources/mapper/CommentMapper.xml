@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.raisetimeline.comment.CommentMapper">
+
+    <resultMap id="commentWithUserMap" type="com.raisetimeline.comment.CommentWithUser">
+        <id property="id" column="id"/>
+        <result property="postId" column="post_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="content" column="content"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="username" column="username"/>
+        <result property="avatarUrl" column="avatar_url"/>
+    </resultMap>
+
+    <resultMap id="commentMap" type="com.raisetimeline.comment.Comment">
+        <id property="id" column="id"/>
+        <result property="postId" column="post_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="content" column="content"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <select id="findByPostId" resultMap="commentWithUserMap">
+        SELECT c.id, c.post_id, c.user_id, c.content, c.created_at,
+               u.username, u.avatar_url
+        FROM comments c
+        JOIN users u ON c.user_id = u.id
+        WHERE c.post_id = #{postId}
+        ORDER BY c.created_at ASC
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO comments (post_id, user_id, content, created_at, updated_at)
+        VALUES (#{postId}, #{userId}, #{content}, NOW(), NOW())
+    </insert>
+
+    <select id="findById" resultMap="commentMap">
+        SELECT id, post_id, user_id, content, created_at, updated_at
+        FROM comments
+        WHERE id = #{id}
+    </select>
+
+    <delete id="deleteById">
+        DELETE FROM comments WHERE id = #{id}
+    </delete>
+
+    <select id="countByPostId" resultType="int">
+        SELECT COUNT(*) FROM comments WHERE post_id = #{postId}
+    </select>
+
+</mapper>

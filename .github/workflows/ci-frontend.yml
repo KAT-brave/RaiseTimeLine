@@ -1,0 +1,39 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 依存関係インストール
+        run: npm ci
+
+      - name: ESLint（静的解析）
+        run: npm run lint
+
+      - name: TypeScript型チェック + Viteビルド
+        run: npm run build
+
+      - name: Vitest（単体テスト）
+        run: npm run test

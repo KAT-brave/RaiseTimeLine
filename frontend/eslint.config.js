@@ -18,5 +18,11 @@ export default defineConfig([
     languageOptions: {
       globals: globals.browser,
     },
+    rules: {
+      // Context/Hook のエクスポートは fast-refresh の対象外だが意図的なパターン
+      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+      // useEffect 内の setState は有効なパターン（ローディング状態のリセット等）
+      'react-hooks/set-state-in-effect': 'off',
+    },
   },
 ])

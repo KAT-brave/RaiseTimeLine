@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { usePosts } from '../hooks/usePosts';
 import PostForm from '../components/PostForm';
@@ -10,7 +10,8 @@ import type { PostResponse } from '../api/posts';
 export default function TimelinePage() {
   const { currentUser, clearAuth } = useAuth();
   const navigate = useNavigate();
-  const { posts, loadMore, hasNext, loading, newPostsCount, refreshPosts, prependPost, replacePost, removePost } = usePosts();
+  const [timelineType, setTimelineType] = useState<'global' | 'following'>('global');
+  const { posts, loadMore, hasNext, loading, newPostsCount, refreshPosts, prependPost, replacePost, removePost } = usePosts(timelineType);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   function handleLogout() {
@@ -39,8 +40,26 @@ export default function TimelinePage() {
     <div style={styles.container}>
       <header style={styles.header}>
         <span style={styles.logo}>ホーム</span>
-        <button onClick={handleLogout} style={styles.logoutBtn}>ログアウト</button>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <Link to="/search" style={styles.searchLink}>ユーザーを検索</Link>
+          <button onClick={handleLogout} style={styles.logoutBtn}>ログアウト</button>
+        </div>
       </header>
+
+      <div style={styles.tabs}>
+        <button
+          style={{ ...styles.tab, ...(timelineType === 'global' ? styles.tabActive : {}) }}
+          onClick={() => setTimelineType('global')}
+        >
+          全体
+        </button>
+        <button
+          style={{ ...styles.tab, ...(timelineType === 'following' ? styles.tabActive : {}) }}
+          onClick={() => setTimelineType('following')}
+        >
+          フォロー中
+        </button>
+      </div>
 
       <PostForm onCreated={handleCreated} />
 
@@ -55,6 +74,12 @@ export default function TimelinePage() {
           onDeleted={removePost}
         />
       ))}
+
+      {!loading && !hasNext && posts.length === 0 && timelineType === 'following' && (
+        <div style={styles.empty}>
+          まだ投稿がありません。<Link to="/search" style={styles.emptyLink}>ユーザーをフォローしてみましょう。</Link>
+        </div>
+      )}
 
       {loading && <div style={styles.loading}>読み込み中...</div>}
 
@@ -76,10 +101,28 @@ const styles: Record<string, React.CSSProperties> = {
     backdropFilter: 'blur(8px)', zIndex: 10,
   },
   logo: { fontSize: 20, fontWeight: 800, color: '#0f1419' },
+  searchLink: {
+    fontSize: 14, fontWeight: 700, color: '#1d9bf0', textDecoration: 'none',
+  },
   logoutBtn: {
     padding: '8px 16px', background: 'transparent', border: '1px solid #cfd9de',
     borderRadius: 9999, fontSize: 14, fontWeight: 700, cursor: 'pointer',
   },
+  tabs: {
+    display: 'flex', borderBottom: '1px solid #e7e9ea',
+  },
+  tab: {
+    flex: 1, padding: '16px 0', background: 'transparent', border: 'none',
+    fontSize: 15, fontWeight: 700, color: '#536471', cursor: 'pointer',
+    borderBottom: '3px solid transparent', transition: 'color 0.2s',
+  },
+  tabActive: {
+    color: '#0f1419', borderBottom: '3px solid #1d9bf0',
+  },
+  empty: {
+    textAlign: 'center', padding: '40px 20px', color: '#536471', fontSize: 15,
+  },
+  emptyLink: { color: '#1d9bf0', textDecoration: 'none' },
   loading: { textAlign: 'center', padding: '20px', color: '#536471', fontSize: 14 },
   end: { textAlign: 'center', padding: '20px', color: '#536471', fontSize: 14 },
 };

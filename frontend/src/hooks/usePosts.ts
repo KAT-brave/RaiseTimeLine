@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 const PAGE_SIZE = 20;
 const POLL_INTERVAL_MS = 60000;
 
-export function usePosts() {
+export function usePosts(type: 'global' | 'following' = 'global') {
   const { token } = useAuth();
   const [posts, setPosts] = useState<PostResponse[]>([]);
   const [page, setPage] = useState(0);
@@ -13,7 +13,6 @@ export function usePosts() {
   const [loading, setLoading] = useState(false);
   const [newPostsCount, setNewPostsCount] = useState(0);
   const latestIdRef = useRef<number | null>(null);
-  // useRefでloadingを管理し、クロージャによる競合状態を防ぐ
   const loadingRef = useRef(false);
 
   const loadPage = useCallback(async (pageNum: number, replace: boolean) => {
@@ -21,7 +20,7 @@ export function usePosts() {
     loadingRef.current = true;
     setLoading(true);
     try {
-      const data = await fetchPosts(token, pageNum, PAGE_SIZE);
+      const data = await fetchPosts(token, pageNum, PAGE_SIZE, type);
       setPosts(prev => {
         const next = replace ? data.posts : [...prev, ...data.posts];
         if (next.length > 0) latestIdRef.current = next[0].id;
@@ -32,11 +31,14 @@ export function usePosts() {
       loadingRef.current = false;
       setLoading(false);
     }
-  }, [token]);
+  }, [token, type]);
 
   useEffect(() => {
+    setPage(0);
+    setHasNext(true);
+    setPosts([]);
     loadPage(0, true);
-  }, [token]);
+  }, [token, type]);
 
   const loadMore = useCallback(() => {
     if (!hasNext || loadingRef.current) return;

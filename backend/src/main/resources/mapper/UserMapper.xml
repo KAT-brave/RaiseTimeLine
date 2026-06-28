@@ -39,6 +39,27 @@
     WHERE username = #{username}
   </select>
 
+  <update id="update">
+    UPDATE users
+    SET username = #{username}, bio = #{bio}, updated_at = NOW()
+    WHERE id = #{id}
+  </update>
+
+  <select id="existsByUsernameExcluding" resultType="boolean">
+    SELECT COUNT(*) > 0
+    FROM users
+    WHERE username = #{username} AND id != #{excludeId}
+  </select>
+
+  <select id="search" resultMap="userResultMap">
+    SELECT id, username, email, password_digest, bio, avatar_url, created_at, updated_at
+    FROM users
+    WHERE username ILIKE '%' || #{keyword} || '%'
+      AND id != #{excludeId}
+    ORDER BY username
+    LIMIT #{limit}
+  </select>
+
   <insert id="insert" useGeneratedKeys="true" keyProperty="id">
     INSERT INTO users (username, email, password_digest, bio, avatar_url, created_at, updated_at)
     VALUES (
