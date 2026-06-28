@@ -122,7 +122,7 @@ jobs:
 
       - name: E2Eテスト実行（perfテスト除外）
         working-directory: e2e
-        run: npx playwright test --project=chromium tests/ --ignore-glob="**/*.perf.spec.ts"
+        run: npm run test:ci
 
       - name: Playwrightレポートをアップロード
         if: always()
