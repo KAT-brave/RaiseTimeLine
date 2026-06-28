@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { updatePost, deletePost, type PostResponse } from '../api/posts';
+import { addLike, removeLike } from '../api/likes';
 import { useAuth } from '../context/AuthContext';
+import CommentSection from './CommentSection';
 
 const MAX_CHARS = 280;
 
@@ -19,6 +22,11 @@ export default function PostCard({ post, currentUserId, onUpdated, onDeleted }: 
   const [submitting, setSubmitting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteError, setDeleteError] = useState('');
+  const [showComments, setShowComments] = useState(false);
+  const [commentsCount, setCommentsCount] = useState(post.commentsCount);
+  const [likedByMe, setLikedByMe] = useState(post.likedByMe);
+  const [likesCount, setLikesCount] = useState(post.likesCount);
+  const [likeSubmitting, setLikeSubmitting] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const isOwner = post.user.id === currentUserId;
@@ -34,6 +42,24 @@ export default function PostCard({ post, currentUserId, onUpdated, onDeleted }: 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  async function handleLikeToggle() {
+    if (!token || likeSubmitting) return;
+    setLikeSubmitting(true);
+    try {
+      if (likedByMe) {
+        await removeLike(token, post.id);
+        setLikedByMe(false);
+        setLikesCount(c => c - 1);
+      } else {
+        await addLike(token, post.id);
+        setLikedByMe(true);
+        setLikesCount(c => c + 1);
+      }
+    } finally {
+      setLikeSubmitting(false);
+    }
+  }
 
   async function handleUpdate(e: FormEvent) {
     e.preventDefault();
@@ -66,15 +92,15 @@ export default function PostCard({ post, currentUserId, onUpdated, onDeleted }: 
   const avatarChar = post.user.username.charAt(0).toUpperCase();
 
   return (
-    <div style={styles.card}>
+    <div style={styles.card} data-testid="post-card">
       <div style={styles.avatar}>{avatarChar}</div>
       <div style={styles.body}>
         <div style={styles.header}>
-          <span style={styles.username}>@{post.user.username}</span>
+          <Link to={`/users/${post.user.id}`} style={styles.username}>@{post.user.username}</Link>
           <span style={styles.time}>{formattedTime}</span>
           {isOwner && (
             <div style={styles.menuWrap} ref={menuRef}>
-              <button style={styles.menuBtn} onClick={() => setMenuOpen(v => !v)}>⋯</button>
+              <button style={styles.menuBtn} onClick={() => setMenuOpen(v => !v)} data-testid="menu-btn">⋯</button>
               {menuOpen && (
                 <div style={styles.dropdown}>
                   <button style={styles.dropItem} onClick={() => { setEditing(true); setMenuOpen(false); }}>
@@ -114,9 +140,26 @@ export default function PostCard({ post, currentUserId, onUpdated, onDeleted }: 
         )}
 
         <div style={styles.actions}>
-          <span style={styles.action}>❤ {post.likesCount}</span>
-          <span style={styles.action}>💬 {post.commentsCount}</span>
+          <button
+            style={{ ...styles.likeAction, color: likedByMe ? '#f4212e' : '#536471' }}
+            onClick={handleLikeToggle}
+            disabled={likeSubmitting}
+            data-testid="like-btn"
+          >
+            {likedByMe ? '❤' : '♡'} {likesCount}
+          </button>
+          <button style={styles.commentAction} onClick={() => setShowComments(v => !v)} data-testid="comment-toggle-btn">
+            💬 {commentsCount}
+          </button>
         </div>
+
+        {showComments && (
+          <CommentSection
+            postId={post.id}
+            currentUserId={currentUserId}
+            onCountChange={setCommentsCount}
+          />
+        )}
       </div>
 
       {showDeleteConfirm && (
@@ -149,7 +192,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   body: { flex: 1, minWidth: 0 },
   header: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 },
-  username: { fontWeight: 700, fontSize: 15, color: '#0f1419' },
+  username: { fontWeight: 700, fontSize: 15, color: '#0f1419', textDecoration: 'none' },
   time: { fontSize: 13, color: '#536471' },
   menuWrap: { marginLeft: 'auto', position: 'relative' },
   menuBtn: {
@@ -170,6 +213,14 @@ const styles: Record<string, React.CSSProperties> = {
   content: { fontSize: 15, color: '#0f1419', margin: '0 0 8px', wordBreak: 'break-word', lineHeight: 1.6 },
   actions: { display: 'flex', gap: 20 },
   action: { fontSize: 13, color: '#536471', cursor: 'default' },
+  likeAction: {
+    background: 'none', border: 'none', cursor: 'pointer',
+    fontSize: 13, padding: 0, fontFamily: 'inherit',
+  },
+  commentAction: {
+    background: 'none', border: 'none', cursor: 'pointer',
+    fontSize: 13, color: '#536471', padding: 0,
+  },
   editForm: { marginBottom: 8 },
   editTextarea: {
     width: '100%', minHeight: 80, border: '1px solid #1d9bf0',
