@@ -194,24 +194,120 @@ erDiagram
 
 ## AWS構成
 
-詳細は [docs/infrastructure.md](docs/infrastructure.md) を参照してください。
+S3 + CloudFront + ECS Fargate + RDS 構成（EC2不使用）。
+詳細は上記「インフラ構成（AWS）」セクションおよび [docs/infrastructure.md](docs/infrastructure.md) を参照してください。
+
+---
+
+## インフラ構成（AWS）
+
+### 構成概要
+
+EC2を使用しないサーバーレス/コンテナ構成。
+
+| レイヤー | サービス | 用途 |
+|---|---|---|
+| フロントエンド | S3 + CloudFront | Reactの静的ファイル配信 |
+| バックエンド | ECS Fargate | Spring Boot（コンテナ） |
+| データベース | RDS (db.t4g.micro) | PostgreSQL 17 |
+| 画像ストレージ | S3 | アイコン/投稿画像 |
+| ロードバランサー | ALB | Fargate前段 |
+| ネットワーク | VPC + NAT Gateway | プライベートサブネット通信 |
+| IaC | Terraform | インフラのコード管理 |
+
+### アーキテクチャ
 
 ```
-ユーザー
-  │ HTTPS
-  ▼
-[ALB（Application Load Balancer）]
-  │
-  ▼
-[EC2] nginx
-  ├── /api  → Spring Boot（ポート8080）
-  └── /     → React 静的ファイル
-  │
-  ▼
-[RDS（PostgreSQL）]        [S3]
-                           ├── 投稿画像
-                           └── アイコン画像
+Client
+  |
+CloudFront (CDN)
+  ├─ /api/* ──→ ALB ──→ ECS Fargate (Spring Boot :8080)
+  |                              ↓
+  |                       RDS (PostgreSQL 17)
+  └─ default ──→ S3 (Frontend / React SPA)
+
+S3（画像ストレージ：アイコン/投稿）
 ```
+
+### CloudFront ルーティング
+
+| パスパターン | オリジン | キャッシュ |
+|---|---|---|
+| `/*`（デフォルト） | S3 (Frontend) | 有効（TTL: 24h） |
+| `/api/*` | ALB | 無効 |
+| `/actuator/*` | ALB | 無効 |
+
+- 独自ドメインなし（CloudFrontデフォルトドメイン `xxxxx.cloudfront.net` を使用）
+- SPA対応：403/404 → `/index.html`（200）を返却
+- S3へのアクセスはOAC経由のみ（直接アクセス不可）
+
+### Terraform ディレクトリ構成
+
+```
+terraform/
+├── main.tf               # プロバイダー設定
+├── variables.tf          # 変数定義
+├── terraform.tfvars      # 変数値（Git管理外）
+├── outputs.tf            # 出力定義
+├── vpc.tf                # VPC・サブネット・IGW・NAT
+├── security_groups.tf    # セキュリティグループ
+├── alb.tf                # ALB・ターゲットグループ・リスナー
+├── ecr.tf                # ECRリポジトリ
+├── ecs.tf                # ECSクラスター・タスク定義・サービス
+├── rds.tf                # RDSインスタンス
+├── s3.tf                 # S3バケット（フロントエンド・画像）
+├── cloudfront.tf         # CloudFrontディストリビューション
+└── iam.tf                # IAMロール・ポリシー
+```
+
+### コスト管理方針（確認時のみ起動）
+
+NAT GatewayとALBは起動時間に応じて課金されるため、**確認時のみ起動・終了後は全リソース削除**の運用とする。
+
+| 運用 | 月額目安 |
+|---|---|
+| 常時起動 | 約$70/月 |
+| 1日2〜4時間 × 20日 | 約$5〜10/月 |
+
+```bash
+# 起動（確認・レビュー時）
+cd terraform
+terraform apply
+
+# 終了後（必ず実行）
+terraform destroy
+```
+
+### デプロイ手順
+
+**バックエンド**
+```bash
+cd backend
+docker build -t raisetimeline-backend .
+aws ecr get-login-password --region ap-northeast-1 | \
+  docker login --username AWS --password-stdin <ACCOUNT_ID>.dkr.ecr.ap-northeast-1.amazonaws.com
+docker tag raisetimeline-backend:latest <ECR_REPOSITORY_URL>:latest
+docker push <ECR_REPOSITORY_URL>:latest
+aws ecs update-service --cluster raisetimeline-cluster --service raisetimeline-backend --force-new-deployment
+```
+
+**フロントエンド**
+```bash
+cd frontend
+npm run build
+aws s3 sync dist/ s3://raisetimeline-frontend/ --delete
+aws cloudfront create-invalidation --distribution-id <DISTRIBUTION_ID> --paths "/*"
+```
+
+### Terraform 出力値
+
+| 出力 | 説明 |
+|---|---|
+| `cloudfront_domain_name` | アプリケーションのURL |
+| `alb_dns_name` | ALB DNS（デバッグ用） |
+| `rds_endpoint` | RDSエンドポイント |
+| `ecr_repository_url` | ECRリポジトリURL |
+| `frontend_bucket_name` | フロントエンドS3バケット名 |
 
 ---
 
